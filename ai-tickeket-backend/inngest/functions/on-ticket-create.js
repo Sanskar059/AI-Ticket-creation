@@ -10,40 +10,39 @@ export const onTicketCreated = inngest.createFunction(
   { event: "ticket/created" },
   async ({ event, step }) => {
     try {
-      console.log("🎫 Starting ticket processing function");
-      console.log("🎫 Event data:", event.data);
+    
 
       const { ticketId } = event.data;
-      console.log("🎫 Processing ticket:", ticketId);
+ 
 
       // Fetch ticket from DB
       const ticket = await step.run("fetch-ticket", async () => {
         try {
-          console.log("🔍 Fetching ticket from database...");
+         
           const ticketObject = await Ticket.findById(ticketId);
           if (!ticketObject) {
-            console.error("❌ Ticket not found in database");
+          
             throw new NonRetriableError("Ticket not found");
           }
-          console.log("✅ Ticket fetched:", ticketObject.title);
+         
           return ticketObject;
         } catch (error) {
-          console.error("❌ Error fetching ticket:", error.message);
+         
           throw error;
         }
       });
 
       // Keep status as TODO initially
-      console.log("📝 Ticket status remains TODO during processing");
+     
 
       // Process with AI (outside of step.run to avoid nesting)
-      console.log("🤖 Starting AI analysis...");
+   
       let aiResponse;
       let relatedSkills = [];
 
       try {
         aiResponse = await analyzeTicket(ticket);
-        console.log("🤖 AI Response:", aiResponse);
+      
 
         if (aiResponse && aiResponse.helpfulNotes) {
           // Convert priority to easy/moderate/hard format
@@ -55,14 +54,14 @@ export const onTicketCreated = inngest.createFunction(
 
           console.log("📝 Updating ticket with AI analysis...");
           await Ticket.findByIdAndUpdate(ticket._id, {
-            priority: priority,
+           $set: { priority: priority,
             helpfulNotes: aiResponse.helpfulNotes,
             status: "IN_PROGRESS",
-            relatedSkills: relatedSkills,
+            relatedSkills: relatedSkills,}
           });
-          console.log("✅ Ticket updated with AI analysis - Status: IN_PROGRESS");
+         
         } else {
-          console.warn("⚠️  AI analysis failed or returned no helpful notes");
+          
           relatedSkills = ["General Support"];
 
           console.log("📝 Updating ticket with fallback values...");
@@ -75,9 +74,7 @@ export const onTicketCreated = inngest.createFunction(
           console.log("✅ Ticket updated with fallback values - Status: IN_PROGRESS");
         }
       } catch (error) {
-        console.error("❌ Error in AI processing:", error.message);
-        console.error("❌ Full AI processing error:", error);
-
+   
         relatedSkills = ["General Support"];
 
         // Update with fallback values even if AI fails
@@ -92,6 +89,7 @@ export const onTicketCreated = inngest.createFunction(
 
       // Assign moderator
       const moderator = await step.run("assign-moderator", async () => {
+         const ticketDoc = await Ticket.findById(ticketId);
         try {
           console.log("👤 Looking for moderator...");
           let user = await User.findOne({
@@ -108,9 +106,8 @@ export const onTicketCreated = inngest.createFunction(
               role: "admin",
             });
           }
-          await Ticket.findByIdAndUpdate(ticket._id, {
-            assignedTo: user?._id || null,
-          });
+             ticketDoc.assignedTo = user?._id || null;
+              await ticketDoc.save();  
           console.log("✅ Moderator assigned:", user?.email || "None");
           return user;
         } catch (error) {

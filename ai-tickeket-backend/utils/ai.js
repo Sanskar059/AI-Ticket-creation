@@ -2,8 +2,7 @@ import { createAgent, gemini } from "@inngest/agent-kit";
 
 const analyzeTicket = async (ticket) => {
   try {
-    console.log("🤖 Starting AI analysis for ticket:", ticket.title);
-    console.log("🤖 Ticket description:", ticket.description);
+
 
     const supportAgent = createAgent({
       model: gemini({
@@ -27,8 +26,7 @@ IMPORTANT:
 Repeat: Do not wrap your output in markdown or code fences.`,
     });
 
-    console.log("🤖 Sending request to Gemini AI...");
-    console.log("🤖 Using API Key:", process.env.GEMINI_API_KEY ? "Found" : "Not found");
+
 
     const response = await supportAgent.run(`You are a ticket triage agent. Only return a strict JSON object with no extra text, headers, or markdown.
         
@@ -55,16 +53,15 @@ Ticket information:
 - Title: ${ticket.title}
 - Description: ${ticket.description}`);
 
-    console.log("🤖 Raw AI response:", response);
-    console.log("🤖 Response output:", response.output);
+ 
 
     const raw = response.output[0].content;
-    console.log("🤖 Raw context:", raw);
+
 
     try {
       const match = raw.match(/```json\s*([\s\S]*?)\s*```/i);
       const jsonString = match ? match[1] : raw.trim();
-      console.log("🤖 JSON string to parse:", jsonString);
+     
 
       const parsed = JSON.parse(jsonString);
       console.log("🤖 Successfully parsed JSON:", parsed);
